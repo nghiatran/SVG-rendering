@@ -44,7 +44,7 @@ public class MyImageView extends ImageView implements OnTouchListener{
 	public MyImageView(Context context) {
 		super(context);
         init(context);
-//		this.setBackgroundColor(Color.WHITE);
+		this.setBackgroundColor(Color.WHITE);
 		setOnTouchListener(this);
 	}
 
@@ -109,8 +109,6 @@ public class MyImageView extends ImageView implements OnTouchListener{
 					matrix.set(savedMatrix);
 					matrix.postTranslate(event.getX() - startX,
 							event.getY() - startY);
-//					setImageMatrix(matrix);
-
 				}
 				else if (mode == ZOOM) {
 					float newDist = spacing(event);
@@ -120,7 +118,6 @@ public class MyImageView extends ImageView implements OnTouchListener{
 						matrix.postScale(scale, scale, midX, midY);
 						matrix.getValues(f);
 						totalScale = f[Matrix.MSCALE_X];
-//						setImageMatrix(matrix);
 					}
 				}
 				invalidate();
