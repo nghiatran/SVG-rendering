@@ -54,28 +54,31 @@ public class MyImageView extends ImageView implements OnTouchListener{
 	private float objWidth;
 	private float objHeight;
 	
+	int height, width;
+	
 	public MyImageView(Context context) {
 		super(context);
         init(context);
-		this.setBackgroundColor(Color.WHITE);
-		setOnTouchListener(this);
+		
 	}
 
 	public MyImageView(Context context, AttributeSet attrs, int defStyle) {
 		super(context, attrs, defStyle);
+		init(context);
 	}
 
 	public MyImageView(Context context, AttributeSet attrs) {
 		super(context, attrs);
+		init(context);
 	}
 	
 	
 	protected void init(Context context){
-		matrix = new Matrix();
+		//  matrix = new Matrix();
 		savedMatrix = new Matrix();
 		
 		f = new float[9];
-		
+
 		paint2 = new Paint();
 		paint2.setColor(Color.RED);
 		paint2.setAlpha(200);
@@ -85,17 +88,21 @@ public class MyImageView extends ImageView implements OnTouchListener{
 	    SVG svg = SVGParser.getSVGFromResource(getResources(), R.raw.example_map2);
 	    picture = svg.getPicture();
 	    objects = SVGParser.getObjectsMap();
-	    for(Entry<String, Properties> entry : objects.entrySet()){
-	    	Log.d("", "id="+entry.getKey());
-	    	Log.d("", "value="+entry.getValue());
-	    }
+
+		this.setBackgroundColor(Color.WHITE);
+		setOnTouchListener(this);
+
+	    width = picture.getWidth();
+	    height = picture.getHeight();
 	}
 
 
 	@Override
 	protected void onDraw(Canvas canvas) {
 		super.onDraw(canvas);
-		
+
+		if(matrix == null)
+			matrix = canvas.getMatrix();
 	    canvas.setMatrix(matrix);
 	    canvas.drawPicture(picture);
 	    canvas.drawRect(objX, objY, objX + objWidth, objY + objHeight, paint2);
@@ -103,6 +110,12 @@ public class MyImageView extends ImageView implements OnTouchListener{
 	@Override
 	public boolean isInEditMode() {
 		return super.isInEditMode();
+	}
+	
+	@Override
+	protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec){
+		super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+		setMeasuredDimension(width, height);
 	}
 	
 	@Override

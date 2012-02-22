@@ -3,11 +3,17 @@
     android:id="@+id/container"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    android:orientation="vertical"
-    android:scrollbars="horizontal|vertical" >
-<com.svg.test.MyImageView
-    android:layout_width="400dp"
-    android:layout_height="400dp">    
-</com.svg.test.MyImageView>
+    android:orientation="vertical" >
+    
+    <TextView 
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Its some activity text"
+        android:padding="5dp" />
+        
+    <com.svg.test.MyImageView
+    	android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        />
 
 </LinearLayout>
