@@ -41,11 +41,19 @@ public class MyImageView extends ImageView implements OnTouchListener{
 	private Matrix matrix;
 	private Matrix savedMatrix;
 	
+	int height, width;
+    Picture picture;
+	
 	public MyImageView(Context context) {
 		super(context);
         init(context);
 		this.setBackgroundColor(Color.WHITE);
 		setOnTouchListener(this);
+		
+		SVG svg = SVGParser.getSVGFromResource(getResources(), R.raw.example_map);
+	    picture = svg.getPicture();
+	    width = picture.getWidth();
+	    height = picture.getHeight();
 	}
 
 	public MyImageView(Context context, AttributeSet attrs, int defStyle) {
@@ -68,16 +76,18 @@ public class MyImageView extends ImageView implements OnTouchListener{
 	protected void onDraw(Canvas canvas) {
 		super.onDraw(canvas);
 		
-	    // Parse the SVG file from the resource
-	    SVG svg = SVGParser.getSVGFromResource(getResources(), R.raw.example_map);
-	    // Get the picture
-	    Picture picture = svg.getPicture();
 	    canvas.setMatrix(matrix);
 	    canvas.drawPicture(picture);
 	}
 	@Override
 	public boolean isInEditMode() {
 		return super.isInEditMode();
+	}
+	
+	@Override
+	protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec){
+		super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+		setMeasuredDimension(width, height);
 	}
 	
 	@Override
