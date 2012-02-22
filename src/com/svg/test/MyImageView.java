@@ -47,6 +47,26 @@ public class MyImageView extends ImageView implements OnTouchListener{
 	public MyImageView(Context context) {
 		super(context);
         init(context);
+		
+	}
+
+	public MyImageView(Context context, AttributeSet attrs, int defStyle) {
+		super(context, attrs, defStyle);
+		init(context);
+	}
+
+	public MyImageView(Context context, AttributeSet attrs) {
+		super(context, attrs);
+		init(context);
+	}
+	
+	
+	protected void init(Context context){
+		//  matrix = new Matrix();
+		savedMatrix = new Matrix();
+		
+		f = new float[9];
+		
 		this.setBackgroundColor(Color.WHITE);
 		setOnTouchListener(this);
 		
@@ -56,25 +76,12 @@ public class MyImageView extends ImageView implements OnTouchListener{
 	    height = picture.getHeight();
 	}
 
-	public MyImageView(Context context, AttributeSet attrs, int defStyle) {
-		super(context, attrs, defStyle);
-	}
-
-	public MyImageView(Context context, AttributeSet attrs) {
-		super(context, attrs);
-	}
-	
-	
-	protected void init(Context context){
-		matrix = new Matrix();
-		savedMatrix = new Matrix();
-		
-		f = new float[9];
-	}
-
 	@Override
 	protected void onDraw(Canvas canvas) {
 		super.onDraw(canvas);
+		
+		if(matrix == null)
+			matrix = canvas.getMatrix();
 		
 	    canvas.setMatrix(matrix);
 	    canvas.drawPicture(picture);

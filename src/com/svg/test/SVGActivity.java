@@ -14,12 +14,12 @@ public class SVGActivity extends Activity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        ImageView imageView =new MyImageView(this);
+        //ImageView imageView =new MyImageView(this);
         // setContentView(imageView);
         
         setContentView(R.layout.main);
-        ViewGroup container = (ViewGroup) findViewById(R.id.container);
-        container.addView(imageView);
+       // ViewGroup container = (ViewGroup) findViewById(R.id.container);
+       // container.addView(imageView);
 
        
 
