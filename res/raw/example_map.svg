@@ -1,0 +1,42 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="338" height="514" version="1.1" xmlns="http://www.w3.org/2000/svg">
+
+<!--areas-->
+<!--Rogueport Station--><rect x="113" y="1" width="192" height="16" style="fill:#F5F5DC;stroke-width:2;stroke:#000000"/>
+<!--Rogueport Station--><polygon points="1,33 305,33 305,65 193,65 193,81 177,81 177,65 1,65" style="fill:#F5F5DC;stroke-width:2;stroke:#000000"/>
+<!--Rogueport's west side--><polygon points="113,81 241,81 337,145 337,305 241,369 113,369 17,289 17,177" style="stroke-width:2;stroke:#000000;fill:#F5F5DC"/>
+
+<!--buildings-->
+<!--West Side Goods--><rect x="33" y="177" width="64" height="80" style="stroke-width:1;stroke:#000000;fill:#D3D3D3"/>
+<!--Pianta Parlor--><rect x="97" y="112" width="64" height="128" style="stroke-width:1;stroke:#000000;fill:#D3D3D3"/>
+<!--House--><rect x="209" y="113" width="64" height="64" style="stroke-width:1;stroke:#000000;fill:#D3D3D3"/>
+<!--House--><rect x="273" y="145" width="64" height="48" style="stroke-width:1;stroke:#000000;fill:#D3D3D3"/>
+<!--Pianta HQ--><rect x="97" y="385" width="64" height="128" style="stroke-width:1;stroke:#000000;fill:#D3D3D3"/>
+<!--House 2nd floor--><rect x="209" y="385" width="64" height="64" style="stroke-width:1;stroke:#000000;fill:#D3D3D3"/>
+<!--House 2nd floor--><rect x="273" y="418" width="64" height="48" style="stroke-width:1;stroke:#000000;fill:#D3D3D3"/>
+
+<!--walls-->
+<!--Rogueport Station-->
+<line x1="129" y1="33" x2="129" y2="49" style="stroke-width:1;stroke:#000000;"/>
+<line x1="241" y1="33" x2="241" y2="65" style="stroke-width:1;stroke:#000000;"/>
+<!--Rogueport's west side-->
+<line x1="289" y1="257" x2="337" y2="257" style="stroke-width:1;stroke:#000000;"/>
+<line x1="145" y1="337" x2="161" y2="337" style="stroke-width:1;stroke:#000000;"/>
+
+<!--paths-->
+<!--Rogueport Station/Rogueport's west side--><line x1="177" y1="81" x2="193" y2="81" style="stroke-dasharray:2;stroke-width:3;stroke:#F5F5DC"/>
+<!--Rogueport's west side/Rogueport's main square--><line x1="337" y1="225" x2="337" y2="241" style="stroke-dasharray:2;stroke-width:3;stroke:#F5F5DC"/>
+
+<!--portals-->
+<!--Glitzville--><rect x="113" y="1" width="16" height="16" style="fill:#CD853F"/>
+<!--Excess Express--><rect x="65" y="33" width="16" height="16" style="stroke-width:0;fill:#CD853F"/>
+<!--Rogueport Sewers--><rect x="177" y="241" width="16" height="16" style="fill:#CD853F"/>
+<!--Rogueport's main square--><rect x="337" y="225" width="16" height="16" style="fill:#CD853F"/>
+
+<!--text-->
+<text x="20" y="55" style="font-size:16pt">Rogueport Station</text>
+<text x="36" y="283" style="font-size:16pt">Rogueport's west side</text>
+<text x="177" y="503" style="font-size:16pt">2nd floor</text>
+
+</svg>
