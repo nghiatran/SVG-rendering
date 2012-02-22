@@ -1,9 +1,14 @@
 package com.svg.test;
 
+import java.util.HashMap;
+import java.util.Map.Entry;
+import java.util.Properties;
+
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
+import android.graphics.Paint;
 import android.graphics.Picture;
 import android.graphics.PointF;
 import android.util.AttributeSet;
@@ -13,6 +18,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnTouchListener;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import com.larvalabs.svgandroid.SVG;
 import com.larvalabs.svgandroid.SVGParser;
@@ -40,6 +46,13 @@ public class MyImageView extends ImageView implements OnTouchListener{
 	
 	private Matrix matrix;
 	private Matrix savedMatrix;
+	private Picture picture;
+	private HashMap<String, Properties> objects;
+	private Paint paint2;
+	private float objX;
+	private float objY;
+	private float objWidth;
+	private float objHeight;
 	
 	public MyImageView(Context context) {
 		super(context);
@@ -62,18 +75,30 @@ public class MyImageView extends ImageView implements OnTouchListener{
 		savedMatrix = new Matrix();
 		
 		f = new float[9];
+		
+		paint2 = new Paint();
+		paint2.setColor(Color.RED);
+		paint2.setAlpha(200);
+		paint2.setStrokeWidth(2.0f);
+		paint2.setStyle(Paint.Style.FILL);
+		
+	    SVG svg = SVGParser.getSVGFromResource(getResources(), R.raw.example_map2);
+	    picture = svg.getPicture();
+	    objects = SVGParser.getObjectsMap();
+	    for(Entry<String, Properties> entry : objects.entrySet()){
+	    	Log.d("", "id="+entry.getKey());
+	    	Log.d("", "value="+entry.getValue());
+	    }
 	}
+
 
 	@Override
 	protected void onDraw(Canvas canvas) {
 		super.onDraw(canvas);
 		
-	    // Parse the SVG file from the resource
-	    SVG svg = SVGParser.getSVGFromResource(getResources(), R.raw.example_map);
-	    // Get the picture
-	    Picture picture = svg.getPicture();
 	    canvas.setMatrix(matrix);
 	    canvas.drawPicture(picture);
+	    canvas.drawRect(objX, objY, objX + objWidth, objY + objHeight, paint2);
 	}
 	@Override
 	public boolean isInEditMode() {
@@ -101,16 +126,17 @@ public class MyImageView extends ImageView implements OnTouchListener{
 			 }
 			 break;
 		 case MotionEvent.ACTION_UP:
-		 case MotionEvent.ACTION_POINTER_UP:
-			 mode = NONE;
+			 if(event.getX() == startX && event.getY()==startY){
+				 if(isWithinBounds(event)){
+					 invalidate();
+				 }
+			 }
 			 break;
-			case MotionEvent.ACTION_MOVE:
-				if (mode == DRAG) {
-					matrix.set(savedMatrix);
-					matrix.postTranslate(event.getX() - startX,
-							event.getY() - startY);
-				}
-				else if (mode == ZOOM) {
+		 case MotionEvent.ACTION_POINTER_UP:
+			 break;
+		 case MotionEvent.ACTION_MOVE:
+
+				if (mode == ZOOM) {
 					float newDist = spacing(event);
 					if (newDist > 10f) {
 						matrix.set(savedMatrix);
@@ -119,6 +145,12 @@ public class MyImageView extends ImageView implements OnTouchListener{
 						matrix.getValues(f);
 						totalScale = f[Matrix.MSCALE_X];
 					}
+				}else if(mode==DRAG){
+					mode = DRAG;
+					matrix.set(savedMatrix);
+					matrix.postTranslate(event.getX() - startX,
+							event.getY() - startY);
+					matrix.getValues(f);
 				}
 				invalidate();
 			 break;
@@ -133,4 +165,24 @@ public class MyImageView extends ImageView implements OnTouchListener{
 		   return FloatMath.sqrt(x * x + y * y);
 		}
 	
+	private boolean isWithinBounds(MotionEvent e){
+		boolean ret = false;
+		for(Entry<String, Properties> object : objects.entrySet()){
+			Properties p = object.getValue();
+			objX = (Float)p.get("x");
+			objY = (Float)p.get("y");
+			objWidth = (Float)p.get("width");
+			objHeight = (Float)p.get("height");
+
+			float x = (e.getRawX()-f[Matrix.MTRANS_X])/totalScale;
+			float y = (e.getRawY()-f[Matrix.MTRANS_Y])/totalScale;
+	        if ((x > objX) && (x < (objX + objWidth))) {
+	            if ((y > objY) && (y < (objY + objHeight))) {
+	            	Toast.makeText(getContext(), object.getKey().toString(), Toast.LENGTH_SHORT).show();;
+	                return true;
+	            }
+	        }
+		}
+		return ret;
+	}
 }
