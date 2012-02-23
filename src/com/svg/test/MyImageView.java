@@ -243,7 +243,8 @@ public class MyImageView extends ImageView implements OnTouchListener{
 			matrix.postScale(scale, scale, midX, midY);
 			
 			// adjusting image to center (usually when it was decreased scaling) [zoomout]
-			adjustXYPositioning();
+			if(scale <=1)
+			   adjustXYPositioning();
 		}
 	}
 	
