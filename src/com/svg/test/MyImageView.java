@@ -1,5 +1,6 @@
 package com.svg.test;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.Properties;
@@ -9,8 +10,12 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.PathMeasure;
 import android.graphics.Picture;
 import android.graphics.PointF;
+import android.graphics.Rect;
+import android.graphics.RectF;
 import android.util.AttributeSet;
 import android.util.FloatMath;
 import android.util.Log;
@@ -53,12 +58,17 @@ public class MyImageView extends ImageView implements OnTouchListener{
 	private float objY;
 	private float objWidth;
 	private float objHeight;
+	String highlightType;
+	Properties highlightObjProperties;
 	
 	int height, width;
 	
 	public MyImageView(Context context) {
 		super(context);
         init(context);
+        this.setBackgroundColor(Color.WHITE);
+        setOnTouchListener(this);
+
 		
 	}
 
@@ -74,7 +84,7 @@ public class MyImageView extends ImageView implements OnTouchListener{
 	
 	
 	protected void init(Context context){
-		//  matrix = new Matrix();
+		matrix = new Matrix();
 		savedMatrix = new Matrix();
 		
 		f = new float[9];
@@ -85,38 +95,36 @@ public class MyImageView extends ImageView implements OnTouchListener{
 		paint2.setStrokeWidth(2.0f);
 		paint2.setStyle(Paint.Style.FILL);
 		
-	    SVG svg = SVGParser.getSVGFromResource(getResources(), R.raw.example_map2);
+	    SVG svg = SVGParser.getSVGFromResource(getResources(), R.raw.drawing);
 	    picture = svg.getPicture();
 	    objects = SVGParser.getObjectsMap();
+	    for(Entry<String, Properties> entry : objects.entrySet()){
+	    	Log.d("", "id="+entry.getKey());
+	    	Log.d("", "value="+entry.getValue());
+	    }
 
-		this.setBackgroundColor(Color.WHITE);
-		setOnTouchListener(this);
-
-	    width = picture.getWidth();
-	    height = picture.getHeight();
 	}
 
 
 	@Override
 	protected void onDraw(Canvas canvas) {
 		super.onDraw(canvas);
-
-		if(matrix == null)
-			matrix = canvas.getMatrix();
+		
 	    canvas.setMatrix(matrix);
 	    canvas.drawPicture(picture);
-	    canvas.drawRect(objX, objY, objX + objWidth, objY + objHeight, paint2);
+	    if(highlightType!=null && highlightType.equals("rect"))
+	       canvas.drawRect(objX, objY, objX + objWidth, objY + objHeight, paint2);
+	    else if(highlightType!=null && highlightType.equals("path")){
+	    	Path p = (Path) highlightObjProperties.get("path");
+	    	canvas.drawPath(p, paint2);
+	    }
+	    	
 	}
 	@Override
 	public boolean isInEditMode() {
 		return super.isInEditMode();
 	}
 	
-	@Override
-	protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec){
-		super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-		setMeasuredDimension(width, height);
-	}
 	
 	@Override
 	public boolean onTouch(View v, MotionEvent event) {
@@ -180,21 +188,58 @@ public class MyImageView extends ImageView implements OnTouchListener{
 	
 	private boolean isWithinBounds(MotionEvent e){
 		boolean ret = false;
+		Log.d("","objects="+objects);
 		for(Entry<String, Properties> object : objects.entrySet()){
 			Properties p = object.getValue();
-			objX = (Float)p.get("x");
-			objY = (Float)p.get("y");
-			objWidth = (Float)p.get("width");
-			objHeight = (Float)p.get("height");
-
+            highlightType=(String)p.get("type");
 			float x = (e.getRawX()-f[Matrix.MTRANS_X])/totalScale;
 			float y = (e.getRawY()-f[Matrix.MTRANS_Y])/totalScale;
-	        if ((x > objX) && (x < (objX + objWidth))) {
-	            if ((y > objY) && (y < (objY + objHeight))) {
-	            	Toast.makeText(getContext(), object.getKey().toString(), Toast.LENGTH_SHORT).show();;
-	                return true;
-	            }
-	        }
+			Log.d("","type="+highlightType);
+			Log.d("","p="+p);
+			if(highlightType.equals("rect")){
+				Log.d("","RECT!");
+				objX = (Float)p.get("x");
+				objY = (Float)p.get("y");
+				objWidth = (Float)p.get("width");
+				objHeight = (Float)p.get("height");
+		        if ((x > objX) && (x < (objX + objWidth))) {
+		            if ((y > objY) && (y < (objY + objHeight))) {
+		            	Toast.makeText(getContext(), object.getKey().toString(), Toast.LENGTH_SHORT).show();;
+		            	highlightObjProperties = p;
+		                return true;
+		            }
+		        }
+			}else if(highlightType.equals("path")){
+				 Log.d("","PATH!");
+				Path path = (Path) p.get("path");
+				RectF rect = new RectF();
+				path.computeBounds(rect, false);
+				
+		        if ((x > rect.left) && (x < rect.right)) {
+		            if ((y > rect.top) && (y < rect.bottom)) {
+		            	Toast.makeText(getContext(), object.getKey().toString(), Toast.LENGTH_SHORT).show();;
+		            	highlightObjProperties = p;
+		                return true;
+		            }
+		        }
+		        
+
+//		        PathMeasure pm = new PathMeasure(path,false);
+//		        float aCoordinates[] = {0f, 0f};
+//		        pm.getPosTan(pm.getLength() * 0.5f, aCoordinates, null);
+//		        
+//		        for(int i=0; i< aCoordinates.length; i++){
+//			        Log.d("","aCoordinates="+aCoordinates[i]);
+//		        }
+
+//		        ArrayList<Float> xs = (ArrayList<Float>) p.get("xPoints");
+//		        ArrayList<Float> ys = (ArrayList<Float>) p.get("yPoints");
+//		        for(int i=0; i < xs.size(); i++){
+//		        	 Log.d("","x"+i+"="+xs.get(i));
+//		        	 Log.d("","y"+i+"="+ys.get(i));
+//		        }
+			}
+
 		}
 		return ret;
 	}
