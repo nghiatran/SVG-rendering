@@ -18,13 +18,14 @@ import com.larvalabs.svgandroid.SVG;
 import com.larvalabs.svgandroid.SVGParser;
 
 public class MyImageView extends ImageView implements OnTouchListener{
-	private float scale = 1.f;
-	private float totalScale = 1;
-	private float[] f;
 	
-    static final int NONE = 0;
-    static final int ZOOM = 1;
-    static final int DRAG =2;
+	private static final float MIN_ZOOM_SCALE = 0.5f;
+	private static final float MAX_ZOOM_SCALE = 10.0f; // 10x of whatever user has initially on screen
+	
+	private static final int NONE = 0;
+	private static final int ZOOM = 1;
+	private static final int DRAG = 2;
+	
     int mode = NONE;
 
     float oldDist = 1f;
@@ -47,6 +48,8 @@ public class MyImageView extends ImageView implements OnTouchListener{
 	float initialPicX, initialPicY;
     Picture picture;
     
+    float minSupportedZoom, maxSupportedZoom;
+    
     public static final int KEY_TRANS_X = 0, KEY_TRANS_Y = 1;
 	
 	public MyImageView(Context context) {
@@ -67,10 +70,7 @@ public class MyImageView extends ImageView implements OnTouchListener{
 	
 	
 	protected void init(Context context){
-		//  matrix = new Matrix();
-		savedMatrix = new Matrix();
-		
-		f = new float[9];
+		 savedMatrix = new Matrix();
 		
 		this.setBackgroundColor(Color.WHITE);
 		setOnTouchListener(this);
@@ -79,26 +79,37 @@ public class MyImageView extends ImageView implements OnTouchListener{
 	    picture = svg.getPicture();
 	    pictureWidth = picture.getWidth();
 	    pictureHeight = picture.getHeight();
-	    
-	    // for wrap_content viewer and picture size will be same. need to implement seperate logic for other cases.
-	    viewerHeight = pictureHeight;
-	    viewerWidth = pictureWidth;
+
 	}
 
 	@Override
 	protected void onDraw(Canvas canvas) {
-		super.onDraw(canvas);
-		
 		if(matrix == null) {
-			matrix = canvas.getMatrix();
-			matrix.getValues(f);
-			initialPicX = f[Matrix.MTRANS_X];
-			initialPicY = f[Matrix.MTRANS_Y];
+			initializeMatrix(canvas);
 		}
 		
+		super.onDraw(canvas);
 	    canvas.setMatrix(matrix);
 	    canvas.drawPicture(picture);
 	}
+	
+	private void initializeMatrix(Canvas canvas){
+		// Set matrix, set initial X and Y positions, set initial required zoom to fit to screen.
+		
+		float[] mValues = new float[9];
+		matrix = canvas.getMatrix();
+		matrix.getValues(mValues);
+		initialPicX = mValues[Matrix.MTRANS_X];
+		initialPicY = mValues[Matrix.MTRANS_Y];
+
+		// calculateInitialZoomScale(): setting initial scale to fit image on screen, also setting min / max supported zoom scale.
+		// applying initial zoom transformation to fit image on screen
+		applyZoom(calculateInitialZoomScale());
+		
+		// explicitly setting image to center of screen. Though it will be done if zoom function above effectively change the size.
+		adjustXYPositioning();
+	}
+	
 	@Override
 	public boolean isInEditMode() {
 		return super.isInEditMode();
@@ -106,9 +117,63 @@ public class MyImageView extends ImageView implements OnTouchListener{
 	
 	@Override
 	protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec){
-		super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-		setMeasuredDimension(pictureWidth, pictureHeight);
+		viewerWidth = measureWidth(widthMeasureSpec);
+		viewerHeight = measureHeight(heightMeasureSpec);
+		setMeasuredDimension(viewerWidth, viewerHeight);
 	}
+	
+	/**
+	 * Taken from google example: http://developer.android.com/resources/samples/ApiDemos/src/com/example/android/apis/view/LabelView.html
+     * Determines the width of this view
+     * @param measureSpec A measureSpec packed into an int
+     * @return The width of the view, honoring constraints from measureSpec
+     */
+    private int measureWidth(int measureSpec) {
+        int result = 0;
+        int specMode = MeasureSpec.getMode(measureSpec);
+        int specSize = MeasureSpec.getSize(measureSpec);
+
+        if (specMode == MeasureSpec.EXACTLY) {
+            // We were told how big to be
+            result = specSize;
+        } else {
+            // Measure the text
+            result = pictureWidth + getPaddingLeft()
+                    + getPaddingRight();
+            if (specMode == MeasureSpec.AT_MOST) {
+                // Respect AT_MOST value if that was what is called for by measureSpec
+                result = Math.min(result, specSize);
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Taken from google example: http://developer.android.com/resources/samples/ApiDemos/src/com/example/android/apis/view/LabelView.html
+     * Determines the height of this view
+     * @param measureSpec A measureSpec packed into an int
+     * @return The height of the view, honoring constraints from measureSpec
+     */
+    private int measureHeight(int measureSpec) {
+        int result = 0;
+        int specMode = MeasureSpec.getMode(measureSpec);
+        int specSize = MeasureSpec.getSize(measureSpec);
+
+        if (specMode == MeasureSpec.EXACTLY) {
+            // We were told how big to be
+            result = specSize;
+        } else {
+            // Measure the text (beware: ascent is a negative number)
+            result = (int) pictureHeight + getPaddingTop()
+                    + getPaddingBottom();
+            if (specMode == MeasureSpec.AT_MOST) {
+                // Respect AT_MOST value if that was what is called for by measureSpec
+                result = Math.min(result, specSize);
+            }
+        }
+        return result;
+    }
 	
 	@Override
 	public boolean onTouch(View v, MotionEvent event) {
@@ -135,43 +200,16 @@ public class MyImageView extends ImageView implements OnTouchListener{
 			 break;
 			case MotionEvent.ACTION_MOVE:
 				if (mode == DRAG) {
+					
 					matrix.set(savedMatrix);
-					
-					
-					float[] desiredTranslations = new float[2];
-					
-					
-					desiredTranslations[KEY_TRANS_X] = event.getX() - startX;
-					desiredTranslations[KEY_TRANS_Y] = event.getY() - startY;
-					
-					
-					Log.d("2359", "Desired Translation x: " + desiredTranslations[KEY_TRANS_X] +" y:"+ desiredTranslations[KEY_TRANS_Y]);
-					
-					
-					calculateRestrictedTranslations(desiredTranslations);
-					
-					Log.d("2359", "Translating x: " + desiredTranslations[KEY_TRANS_X] +" y:"+ desiredTranslations[KEY_TRANS_Y]);
-					matrix.postTranslate(desiredTranslations[KEY_TRANS_X], desiredTranslations[KEY_TRANS_Y]);
-					
-					
-					
+					applyDraging(startX, event.getX(), startY, event.getY());
+
 				}
 				else if (mode == ZOOM) {
 					float newDist = spacing(event);
 					if (newDist > 10f) {
 						matrix.set(savedMatrix);
-						scale = newDist / oldDist;
-						// restrict scale
-						scale = calculateRestrictedScale(scale, 1.0f, 3.0f);
-						
-						Log.d("2359", "Changed scale:"+scale);
-						matrix.postScale(scale, scale, midX, midY);
-						
-						adjustXYAfterScaling();
-						
-						
-						matrix.getValues(f);
-						totalScale = f[Matrix.MSCALE_X];
+						applyZoom(newDist / oldDist);
 					}
 				}
 				invalidate();
@@ -181,7 +219,58 @@ public class MyImageView extends ImageView implements OnTouchListener{
 		 return true;
 	}
 	
-	private void adjustXYAfterScaling(){
+	private void applyDraging(float startX, float endX, float startY, float endY){
+		float[] desiredTranslations = new float[2];
+
+		desiredTranslations[KEY_TRANS_X] = endX - startX;
+		desiredTranslations[KEY_TRANS_Y] = endY - startY;
+
+		calculateRestrictedTranslations(desiredTranslations);
+		
+		// A Bit of optimization, postTranslate matrix only if we have some values to adjust
+		if(desiredTranslations[KEY_TRANS_X] != 0 || desiredTranslations[KEY_TRANS_Y] != 0) {
+			matrix.postTranslate(desiredTranslations[KEY_TRANS_X], desiredTranslations[KEY_TRANS_Y]);
+		}
+	}
+	
+	private void applyZoom(float scale) {
+		// making sure, the last scale set is according to our min / max scale
+		scale = calculateRestrictedScale(scale, minSupportedZoom, maxSupportedZoom);
+		
+		// applying scaling transformation
+		// A Bit of optimization, postScale matrix only if we have some scale to multiply
+		if(scale != 1) {
+			matrix.postScale(scale, scale, midX, midY);
+			
+			// adjusting image to center (usually when it was decreased scaling) [zoomout]
+			adjustXYPositioning();
+		}
+	}
+	
+	private float calculateInitialZoomScale(){
+		float ratioWidth, ratioHeight, scale;
+		ratioWidth = viewerWidth / (float) pictureWidth;
+		ratioHeight = viewerHeight / (float) pictureHeight;
+		
+		if(ratioWidth < ratioHeight){
+			scale = (float) ratioWidth;
+			minSupportedZoom = (float) ratioWidth;
+		}
+		else {
+			scale = (float) ratioHeight;
+			minSupportedZoom = (float) ratioHeight;
+		}
+		
+		minSupportedZoom = Math.min(MIN_ZOOM_SCALE, minSupportedZoom);
+		maxSupportedZoom = minSupportedZoom * MAX_ZOOM_SCALE; // MAX_ZOOM_SCALE times of what displayed initially on user's screen
+		
+		midX = viewerWidth / 2; // set initial mid point to center of viewer
+		midY = viewerHeight / 2;
+		
+		return scale;
+	}
+	
+	private void adjustXYPositioning(){
 		float[] mValues = new float[9];
 		matrix.getValues(mValues);
 		
@@ -190,14 +279,42 @@ public class MyImageView extends ImageView implements OnTouchListener{
 		float adjustX = 0, adjustY = 0;
 		
 		
-		float currentWidth = (int) (pictureWidth * mValues[Matrix.MSCALE_X]);
-		float currentHeight = (int) (pictureHeight * mValues[Matrix.MSCALE_Y]); 
+		float currentWidth  = (pictureWidth * mValues[Matrix.MSCALE_X]);
+		float currentHeight = (pictureHeight * mValues[Matrix.MSCALE_Y]); 
 		
-		float maxX = initialPicX; // we supporting min zoom 1, increasing from this X or Y value means we are creating white space on left or top.
-		float maxY = initialPicY; // min zoom is 1
-		
-		float minX = (initialPicX + viewerWidth - currentWidth);
-		float minY = (initialPicY + viewerHeight - currentHeight);
+		// initialPicX and initialPicY are alternative to 0,0 coordinate.. i.e.
+		// starting X and Y.
+		float maxX = initialPicX;
+		float maxY = initialPicY;
+		float minX = initialPicX;
+		float minY = initialPicY;
+
+		if (currentWidth < viewerWidth) {
+			// image is smaller then screen
+			// if screen size is 100 and image is 50, then image starting X
+			// corner should be 25 to keep image in center
+			// i.e. from 100 screen, image will lie between 26px to 75px ..
+			// leaving 25px at both ends
+			// same concept apply to height
+
+			maxX = initialPicX + ((viewerWidth - currentWidth) / 2);
+			minX = initialPicX + ((viewerWidth - currentWidth) / 2); // center
+		} else {
+			// image is larger then screen
+			// if screen is 100 and image is 200, then the initial X of image
+			// can go upto -100 to show complete image by draging.
+			// if initial will goto -100, then the visible area of image on
+			// screen will become 101 to 200
+			// same concept apply to height
+			minX = (initialPicX + viewerWidth - currentWidth);
+		}
+
+		if(currentHeight < viewerHeight){
+			maxY = initialPicY + ((viewerHeight - currentHeight) /2);
+			minY = initialPicY + ((viewerHeight - currentHeight) /2);
+		}else {
+			minY = (initialPicY + viewerHeight - currentHeight);
+		}
 		
 		
 		if(currentX < minX) {
@@ -213,30 +330,59 @@ public class MyImageView extends ImageView implements OnTouchListener{
 			adjustY = (maxY - currentY);
 		}
 		
-		
-		matrix.postTranslate(adjustX, adjustY);
+		// Optimization, postTranslate only if we have some valid value to translate.
+		if(adjustX != 0 || adjustY != 0){
+			matrix.postTranslate(adjustX, adjustY);
+		}
 	}
 	
 	private void calculateRestrictedTranslations(float[] desiredTranslations){
 		float[] mValues = new float[9];
 		matrix.getValues(mValues);
-		float currentWidth = (int) (pictureWidth * mValues[Matrix.MSCALE_X]);
-		float currentHeight = (int) (pictureHeight * mValues[Matrix.MSCALE_Y]); 
+		float currentWidth  = (pictureWidth * mValues[Matrix.MSCALE_X]);
+		float currentHeight = (pictureHeight * mValues[Matrix.MSCALE_Y]); 
+		
+		
+		// initialPicX and initialPicY are alternative to 0,0 coordinate.. i.e. starting X and Y.
+		float maxX = initialPicX; 
+		float maxY = initialPicY; 
+		float minX = initialPicX;
+		float minY = initialPicY;
 		
 		
 		
-		float maxX = initialPicX; // we supporting min zoom 1, increasing from this X or Y value means we are creating white space on left or top.
-		float maxY = initialPicY; // min zoom is 1
+		if(currentWidth < viewerWidth){
+			// image is smaller then screen
+			// if screen size is 100 and image is 50, then image starting X corner should be 25 to keep image in center
+			// i.e. from 100 screen, image will lie between 26px to 75px .. leaving 25px at both ends
+			// same concept apply to height
+			
+			maxX = initialPicX + ((viewerWidth - currentWidth) / 2);
+			minX = initialPicX + ((viewerWidth - currentWidth) / 2); // center
+		}
+		else {
+			// image is larger then screen 
+			// if screen is 100 and image is 200, then the initial X of image can go upto -100 to show complete image by draging.
+			// if initial will goto -100, then the visible area of image on screen will become 101 to 200 
+			// same concept apply to height
+			minX = (initialPicX + viewerWidth - currentWidth);
+		}
 		
-		// if viewerWidth is 100, and image's currentWidth (after scale etc) is 200.. then we need to set the X position to -100 to see the ending portion of image i.e. from 101 to 200px part.
-		// initialPicX and initialPicY variable is introduced coz, initial X and Y may not be zero in all cases. for understanding of concept ignore them.
-		float minX = (initialPicX + viewerWidth - currentWidth);
-		float minY = (initialPicY + viewerHeight - currentHeight);
+		if(currentHeight < viewerHeight){
+			maxY = initialPicY + ((viewerHeight - currentHeight) /2);
+			minY = initialPicY + ((viewerHeight - currentHeight) /2);
+		}else {
+			minY = (initialPicY + viewerHeight - currentHeight);
+		}
+		
+		
+		
 		
 		// getting projected values, will check them if they comply with our boundries.. otherwise will adjust user's desired translation.
 		float projectedX = mValues[Matrix.MTRANS_X] + desiredTranslations[KEY_TRANS_X];
 		float projectedY = mValues[Matrix.MTRANS_Y] + desiredTranslations[KEY_TRANS_Y];
 		
+		// checking projected values with our boundries.. and adjusting if needed.
 		if(projectedX < minX) {
 			desiredTranslations[KEY_TRANS_X] = desiredTranslations[KEY_TRANS_X] + (minX - projectedX);
 		}
@@ -260,6 +406,7 @@ public class MyImageView extends ImageView implements OnTouchListener{
 		
 		predictedZoom = desiredScale * currentScale;
 		
+		// checking if projectedZoon is within our given limit. Otherwise adjust it
 		if(predictedZoom > maxZoom) {
 			desiredScale = maxZoom / currentScale;
 		}
@@ -271,9 +418,9 @@ public class MyImageView extends ImageView implements OnTouchListener{
 	}
 	
 	private float spacing(MotionEvent event) {
-		   float x = event.getX(0) - event.getX(1);
-		   float y = event.getY(0) - event.getY(1);
-		   return FloatMath.sqrt(x * x + y * y);
-		}
+		float x = event.getX(0) - event.getX(1);
+		float y = event.getY(0) - event.getY(1);
+		return FloatMath.sqrt(x * x + y * y);
+	}
 	
 }
