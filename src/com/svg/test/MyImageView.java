@@ -472,6 +472,7 @@ public class MyImageView extends ImageView implements OnTouchListener{
 	}
 	
 	private boolean isWithinBounds(MotionEvent e){
+		
 		boolean ret = false;
 		float[] mValues = new float[9];
 		matrix.getValues(mValues);
@@ -486,7 +487,6 @@ public class MyImageView extends ImageView implements OnTouchListener{
 			Log.d("","type="+highlightType);
 			Log.d("","p="+p);
 			if(highlightType.equals("rect")){
-				Log.d("","RECT!");
 				objX = (Float)p.get("x");
 				objY = (Float)p.get("y");
 				objWidth = (Float)p.get("width");
@@ -499,34 +499,15 @@ public class MyImageView extends ImageView implements OnTouchListener{
 		            }
 		        }
 			}else if(highlightType.equals("path")){
-				 Log.d("","PATH!");
-				Path path = (Path) p.get("path");
-				RectF rect = new RectF();
-				path.computeBounds(rect, false);
-				
-		        if ((x > rect.left) && (x < rect.right)) {
-		            if ((y > rect.top) && (y < rect.bottom)) {
-		            	Toast.makeText(getContext(), object.getKey().toString(), Toast.LENGTH_SHORT).show();;
-		            	highlightObjProperties = p;
-		                return true;
-		            }
+
+		        ArrayList<Float> xs = (ArrayList<Float>) p.get("xpoints");
+		        ArrayList<Float> ys = (ArrayList<Float>) p.get("ypoints");
+		        Polygon polygon = new Polygon(xs, ys);
+		        if(polygon.contains(x, y)){
+	            	Toast.makeText(getContext(), object.getKey().toString(), Toast.LENGTH_SHORT).show();;
+	            	highlightObjProperties = p;
+	            	return true;
 		        }
-		        
-
-//		        PathMeasure pm = new PathMeasure(path,false);
-//		        float aCoordinates[] = {0f, 0f};
-//		        pm.getPosTan(pm.getLength() * 0.5f, aCoordinates, null);
-//		        
-//		        for(int i=0; i< aCoordinates.length; i++){
-//			        Log.d("","aCoordinates="+aCoordinates[i]);
-//		        }
-
-//		        ArrayList<Float> xs = (ArrayList<Float>) p.get("xPoints");
-//		        ArrayList<Float> ys = (ArrayList<Float>) p.get("yPoints");
-//		        for(int i=0; i < xs.size(); i++){
-//		        	 Log.d("","x"+i+"="+xs.get(i));
-//		        	 Log.d("","y"+i+"="+ys.get(i));
-//		        }
 			}
 
 		}
