@@ -1,6 +1,5 @@
 package com.svg.test;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.Properties;
@@ -24,8 +23,6 @@ import android.view.View.OnTouchListener;
 import android.widget.ImageView;
 import android.widget.Toast;
 
-import com.larvalabs.svgandroid.SVG;
-import com.larvalabs.svgandroid.SVGParser;
 
 public class MyImageView extends ImageView implements OnTouchListener{
 	
