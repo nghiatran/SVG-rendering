@@ -14,6 +14,7 @@ import android.graphics.Path;
 import android.graphics.Picture;
 import android.graphics.PointF;
 import android.graphics.PorterDuff.Mode;
+import android.graphics.RectF;
 import android.util.AttributeSet;
 import android.util.FloatMath;
 import android.util.Log;
@@ -68,11 +69,18 @@ public class MyImageView extends ImageView implements OnTouchListener{
     float minSupportedZoom, maxSupportedZoom;
     
     public static final int KEY_TRANS_X = 0, KEY_TRANS_Y = 1;
-    public static final String TYPE_PATH="path";
-    public static final String TYPE_RECT="rect";
-    public static final String KEY_TYPE="type";
-    public static final String KEY_X="x";
-	
+    public static final String VAL_TYPE_PATH="path";
+    public static final String VAL_TYPE_RECT="rect";
+    public static final String PROP_KEY_TYPE="type";
+    public static final String PROP_KEY_X="x";
+    public static final String PROP_KEY_Y="y";
+    public static final String PROP_KEY_PATH_OBJ="path_obj";
+	public static final String PROP_KEY_WIDTH = "width";
+	public static final String PROP_KEY_HEIGHT = "height";
+    
+    private HashMap<String, Integer > id_color_map;
+
+    
 	public MyImageView(Context context) {
 		super(context);
         init(context);
@@ -107,13 +115,11 @@ public class MyImageView extends ImageView implements OnTouchListener{
 	    SVG svg = SVGParser.getSVGFromResource(getResources(), R.raw.drawing2);
 	    picture = svg.getPicture();
 	    objects = SVGParser.getObjectsMap();
-	    for(Entry<String, Properties> entry : objects.entrySet()){
-	    	Log.d("", "id="+entry.getKey());
-	    	Log.d("", "value="+entry.getValue());
-	    }
+
 	    pictureWidth = picture.getWidth();
 	    pictureHeight = picture.getHeight();
 	    //getAllPAthPoints();
+	    createTopMapCanvas();
 	}
 
 
@@ -126,12 +132,21 @@ public class MyImageView extends ImageView implements OnTouchListener{
 		super.onDraw(canvas);
 	    canvas.setMatrix(matrix);
 	    canvas.drawPicture(picture);
-	    if(highlightType!=null && highlightType.equals("rect"))
-	       canvas.drawRect(objX, objY, objX + objWidth, objY + objHeight, highlightColor);
-	    else if(highlightType!=null && highlightType.equals("path")){
-	    	Path p = (Path) highlightObjProperties.get("path");
+	    if(highlightType!=null && highlightType.equals(VAL_TYPE_RECT)){
+	    	Log.d("", "draw rect");
+			float x = (Float)highlightObjProperties.get(PROP_KEY_X);
+			float y = (Float)highlightObjProperties.get(PROP_KEY_Y);
+			float width = (Float)highlightObjProperties.get(PROP_KEY_WIDTH);
+			float height = (Float)highlightObjProperties.get(PROP_KEY_HEIGHT);
+			Log.d("", "x="+x);
+			Log.d("", "y="+y);
+			Log.d("", "width="+width);
+			Log.d("", "height="+height);
+			topCanvas.drawRect(x, y, x + width, y + height, highlightColor);
+			
+	    }else if(highlightType!=null && highlightType.equals(VAL_TYPE_PATH)){
+	    	Path p = (Path) highlightObjProperties.get(PROP_KEY_PATH_OBJ);
 	    	canvas.drawPath(p, highlightColor);
-	    	
 	    }
 	    	
 	}
@@ -477,13 +492,27 @@ public class MyImageView extends ImageView implements OnTouchListener{
 		float[] mValues = new float[9];
 		matrix.getValues(mValues);
 		float totalScale = mValues[Matrix.MSCALE_X];
+		float x = (e.getRawX()-mValues[Matrix.MTRANS_X])/totalScale;
+		float y = (e.getRawY()-mValues[Matrix.MTRANS_Y])/totalScale;
 		
 		Log.d("","objects="+objects);
+		Log.d("","id_color_map="+id_color_map);
+		String shop = getClickedShop(x, y);
+		Log.d("","shop clicked="+shop);
+		if(shop!=null){
+			Toast.makeText(getContext(), shop, Toast.LENGTH_SHORT).show();;
+			highlightObjProperties = objects.get(shop);
+        	highlightType = (String) highlightObjProperties.get(PROP_KEY_TYPE);
+        	Log.d("","shop clicked="+shop);
+        	Log.d("","highlightType="+highlightType);
+        	Log.d("","highlightObjProperties="+highlightObjProperties);
+        	return true;
+		}
+		/*
 		for(Entry<String, Properties> object : objects.entrySet()){
 			Properties prop = object.getValue();
             String type =(String)prop.get("type");
-			float x = (e.getRawX()-mValues[Matrix.MTRANS_X])/totalScale;
-			float y = (e.getRawY()-mValues[Matrix.MTRANS_Y])/totalScale;
+
 
 			if(type.equals("rect")){
 				Log.d("","RECT!");
@@ -503,6 +532,7 @@ public class MyImageView extends ImageView implements OnTouchListener{
 			}else if(type.equals("path")){
 				Log.d("","PATH!");
 				Path path = (Path) prop.get("path");
+				
 		        if(isContained(path, (int)x, (int)y)){
 	            	Toast.makeText(getContext(), object.getKey().toString(), Toast.LENGTH_SHORT).show();;
 	            	highlightObjProperties = prop;
@@ -510,14 +540,17 @@ public class MyImageView extends ImageView implements OnTouchListener{
 	            	Log.d("","INSIDE PATH");
 	            	return true;
 		        }
+				
+
 			}else{
 				highlightType = "";
 			}
 
 		}
+		*/
 		return ret;
 	}
-
+/*
 	private boolean isContained(Path mPath, int x, int y){
 		Paint cPaint = new Paint();
 
@@ -534,5 +567,53 @@ public class MyImageView extends ImageView implements OnTouchListener{
 
 		return false;
 
+	}
+	*/
+	Canvas topCanvas;
+	Bitmap topBitmap;
+	private void createTopMapCanvas(){
+		
+		topBitmap = Bitmap.createBitmap(pictureWidth, pictureHeight, Bitmap.Config.ARGB_8888);
+		id_color_map = new HashMap<String, Integer>();
+		
+	    int color = 0xFF000000;
+		Paint cPaint = new Paint();
+		cPaint.setAntiAlias(false);
+		cPaint.setStyle(Paint.Style.FILL);
+		topCanvas = new Canvas(topBitmap);
+		topCanvas.drawColor(0xFFFFFFFF, Mode.CLEAR);
+
+		for(Entry<String, Properties> object : objects.entrySet()){
+			Properties prop = object.getValue();
+            String type =(String)prop.get(PROP_KEY_TYPE);
+            
+            if(type.equals(VAL_TYPE_PATH)){
+            	Path path = (Path) prop.get(PROP_KEY_PATH_OBJ);
+        		cPaint.setColor(color);
+        		topCanvas.drawPath(path, cPaint);
+        		id_color_map.put(object.getKey(), color);
+        		color++;
+            }else if(type.equals(VAL_TYPE_RECT)){
+				float x = (Float)prop.get(PROP_KEY_X);
+				float y = (Float)prop.get(PROP_KEY_Y);
+				float width = (Float)prop.get(PROP_KEY_WIDTH);
+				float height = (Float)prop.get(PROP_KEY_HEIGHT);
+				cPaint.setColor(color);
+				topCanvas.drawRect(x, y, x + width, y + height, cPaint);
+				id_color_map.put(object.getKey(), color);
+				color++;
+            }
+		}
+	}
+	
+	private String getClickedShop( float x, float y){
+		for(Entry<String, Integer> id : id_color_map.entrySet()){
+			Log.d("","pixel color="+topBitmap.getPixel((int)x, (int)y) );
+			Log.d("","id="+id.getKey()+", id color value="+id.getValue());
+			if (topBitmap.getPixel((int)x, (int)y) == (int)id.getValue()) {
+				return id.getKey();
+			}
+		}
+		return null;
 	}
 }

@@ -1521,11 +1521,11 @@ public class SVGParser {
 				Properties props = new Properties(atts);
 				
 				java.util.Properties p = new java.util.Properties();
-				p.put("x", x);
-				p.put("y", y);
-				p.put("width", width);
-				p.put("height", height);
-				p.put("type", "rect");
+				p.put(MyImageView.PROP_KEY_X, x);
+				p.put(MyImageView.PROP_KEY_Y, y);
+				p.put(MyImageView.PROP_KEY_WIDTH, width);
+				p.put(MyImageView.PROP_KEY_HEIGHT, height);
+				p.put(MyImageView.PROP_KEY_TYPE, "rect");
 				objectsMap.put(name, p);
 				
 				if (doFill(props, gradientMap)) {
@@ -1644,8 +1644,8 @@ public class SVGParser {
 				//*******
 				String name = getStringAttr("id", atts);
 				java.util.Properties prop = new java.util.Properties();
-			    prop.put("path", p);
-				prop.put("type", "path");
+			    prop.put(MyImageView.PROP_KEY_PATH_OBJ, p);
+				prop.put(MyImageView.PROP_KEY_TYPE, "path");
 				objectsMap.put(name, prop);
 				Log.d("SVG Parser", "name="+name);
 				popTransform();

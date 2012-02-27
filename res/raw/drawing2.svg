@@ -58,7 +58,7 @@
        inkscape:connector-curvature="0"
        inkscape:label="#path2985" />
     <rect
-       style="fill:#0000ff;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
        id="rect2987"
        width="31.31473"
        height="48.487324"
@@ -80,5 +80,6 @@
        d="m 264.65997,513.95087 c 146.47212,-1.01015 263.64981,-2.0203 263.64981,-2.0203 0,0 7.07107,75.76144 1.01016,70.71068 -6.06092,-5.05077 -94.95434,-40.4061 -94.95434,-40.4061 l -85.86297,0 -94.95434,41.41625 -2.02031,-70.71068 z"
        id="path10638"
        inkscape:connector-curvature="0" />
+    <ellipse ry="19" rx="16" id="svg_1" cy="375.63782" cx="385.90552" stroke="#000000" fill="#fcf9f9"/>
   </g>
 </svg>
