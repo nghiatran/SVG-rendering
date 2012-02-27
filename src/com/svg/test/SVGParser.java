@@ -38,9 +38,6 @@ import org.xml.sax.InputSource;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
 
-import com.larvalabs.svgandroid.ParserHelper;
-import com.larvalabs.svgandroid.SVGColors;
-import com.larvalabs.svgandroid.SVGParseException;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

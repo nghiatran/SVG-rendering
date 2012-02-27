@@ -5,9 +5,6 @@ import android.os.Bundle;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 
-import com.larvalabs.svgandroid.SVG;
-import com.larvalabs.svgandroid.SVGParser;
-
 public class SVGActivity extends Activity {
 
     /** Called when the activity is first created. */
