@@ -68,7 +68,10 @@ public class MyImageView extends ImageView implements OnTouchListener{
     float minSupportedZoom, maxSupportedZoom;
     
     public static final int KEY_TRANS_X = 0, KEY_TRANS_Y = 1;
-
+    public static final String TYPE_PATH="path";
+    public static final String TYPE_RECT="rect";
+    public static final String KEY_TYPE="type";
+    public static final String KEY_X="x";
 	
 	public MyImageView(Context context) {
 		super(context);
@@ -477,21 +480,21 @@ public class MyImageView extends ImageView implements OnTouchListener{
 		
 		Log.d("","objects="+objects);
 		for(Entry<String, Properties> object : objects.entrySet()){
-			Properties p = object.getValue();
-            String type =(String)p.get("type");
+			Properties prop = object.getValue();
+            String type =(String)prop.get("type");
 			float x = (e.getRawX()-mValues[Matrix.MTRANS_X])/totalScale;
 			float y = (e.getRawY()-mValues[Matrix.MTRANS_Y])/totalScale;
 
 			if(type.equals("rect")){
 				Log.d("","RECT!");
-				objX = (Float)p.get("x");
-				objY = (Float)p.get("y");
-				objWidth = (Float)p.get("width");
-				objHeight = (Float)p.get("height");
+				objX = (Float)prop.get("x");
+				objY = (Float)prop.get("y");
+				objWidth = (Float)prop.get("width");
+				objHeight = (Float)prop.get("height");
 		        if ((x > objX) && (x < (objX + objWidth))) {
 		            if ((y > objY) && (y < (objY + objHeight))) {
 		            	Toast.makeText(getContext(), object.getKey().toString(), Toast.LENGTH_SHORT).show();;
-		            	highlightObjProperties = p;
+		            	highlightObjProperties = prop;
 		            	highlightType = type;
 		            	Log.d("","INSIDE RECT");
 		                return true;
@@ -499,10 +502,10 @@ public class MyImageView extends ImageView implements OnTouchListener{
 		        }
 			}else if(type.equals("path")){
 				Log.d("","PATH!");
-				Path path = (Path) p.get("path");
+				Path path = (Path) prop.get("path");
 		        if(isContained(path, (int)x, (int)y)){
 	            	Toast.makeText(getContext(), object.getKey().toString(), Toast.LENGTH_SHORT).show();;
-	            	highlightObjProperties = p;
+	            	highlightObjProperties = prop;
 	            	highlightType = type;
 	            	Log.d("","INSIDE PATH");
 	            	return true;
