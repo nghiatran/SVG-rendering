@@ -6,16 +6,15 @@ import java.util.Map.Entry;
 import java.util.Properties;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.graphics.PathMeasure;
 import android.graphics.Picture;
 import android.graphics.PointF;
-import android.graphics.Rect;
-import android.graphics.RectF;
+import android.graphics.PorterDuff.Mode;
 import android.util.AttributeSet;
 import android.util.FloatMath;
 import android.util.Log;
@@ -53,7 +52,7 @@ public class MyImageView extends ImageView implements OnTouchListener{
 	private Matrix matrix;
 	private Matrix savedMatrix;
 	private Picture picture;
-	private HashMap<String, Properties> objects;
+	private HashMap<String, Properties> objects; //this will contain all the object/shops (with its coordinates) parsed from the svg file
 	private Paint highlightColor;
 	private float objX;
 	private float objY;
@@ -105,7 +104,7 @@ public class MyImageView extends ImageView implements OnTouchListener{
 		highlightColor.setStrokeWidth(2.0f);
 		highlightColor.setStyle(Paint.Style.FILL);
 		
-	    SVG svg = SVGParser.getSVGFromResource(getResources(), R.raw.drawing);
+	    SVG svg = SVGParser.getSVGFromResource(getResources(), R.raw.drawing2);
 	    picture = svg.getPicture();
 	    objects = SVGParser.getObjectsMap();
 	    for(Entry<String, Properties> entry : objects.entrySet()){
@@ -114,6 +113,7 @@ public class MyImageView extends ImageView implements OnTouchListener{
 	    }
 	    pictureWidth = picture.getWidth();
 	    pictureHeight = picture.getHeight();
+	    //getAllPAthPoints();
 	}
 
 
@@ -131,6 +131,7 @@ public class MyImageView extends ImageView implements OnTouchListener{
 	    else if(highlightType!=null && highlightType.equals("path")){
 	    	Path p = (Path) highlightObjProperties.get("path");
 	    	canvas.drawPath(p, highlightColor);
+	    	
 	    }
 	    	
 	}
@@ -472,7 +473,6 @@ public class MyImageView extends ImageView implements OnTouchListener{
 	}
 	
 	private boolean isWithinBounds(MotionEvent e){
-		
 		boolean ret = false;
 		float[] mValues = new float[9];
 		matrix.getValues(mValues);
@@ -481,12 +481,12 @@ public class MyImageView extends ImageView implements OnTouchListener{
 		Log.d("","objects="+objects);
 		for(Entry<String, Properties> object : objects.entrySet()){
 			Properties p = object.getValue();
-            highlightType=(String)p.get("type");
+            String type =(String)p.get("type");
 			float x = (e.getRawX()-mValues[Matrix.MTRANS_X])/totalScale;
 			float y = (e.getRawY()-mValues[Matrix.MTRANS_Y])/totalScale;
-			Log.d("","type="+highlightType);
-			Log.d("","p="+p);
-			if(highlightType.equals("rect")){
+
+			if(type.equals("rect")){
+				Log.d("","RECT!");
 				objX = (Float)p.get("x");
 				objY = (Float)p.get("y");
 				objWidth = (Float)p.get("width");
@@ -495,22 +495,44 @@ public class MyImageView extends ImageView implements OnTouchListener{
 		            if ((y > objY) && (y < (objY + objHeight))) {
 		            	Toast.makeText(getContext(), object.getKey().toString(), Toast.LENGTH_SHORT).show();;
 		            	highlightObjProperties = p;
+		            	highlightType = type;
+		            	Log.d("","INSIDE RECT");
 		                return true;
 		            }
 		        }
-			}else if(highlightType.equals("path")){
-
-		        ArrayList<Float> xs = (ArrayList<Float>) p.get("xpoints");
-		        ArrayList<Float> ys = (ArrayList<Float>) p.get("ypoints");
-		        Polygon polygon = new Polygon(xs, ys);
-		        if(polygon.contains(x, y)){
+			}else if(type.equals("path")){
+				Log.d("","PATH!");
+				Path path = (Path) p.get("path");
+		        if(isContained(path, (int)x, (int)y)){
 	            	Toast.makeText(getContext(), object.getKey().toString(), Toast.LENGTH_SHORT).show();;
 	            	highlightObjProperties = p;
+	            	highlightType = type;
+	            	Log.d("","INSIDE PATH");
 	            	return true;
 		        }
+			}else{
+				highlightType = "";
 			}
 
 		}
 		return ret;
+	}
+
+	private boolean isContained(Path mPath, int x, int y){
+		Paint cPaint = new Paint();
+
+		cPaint.setAntiAlias(false);
+		cPaint.setColor(0xFF000000);
+		cPaint.setStyle(Paint.Style.FILL);
+		Bitmap topBitmap = Bitmap.createBitmap(pictureWidth, pictureHeight, Bitmap.Config.ARGB_8888);
+		Canvas topCanvas = new Canvas(topBitmap);
+		topCanvas.drawColor(0xFFFFFFFF, Mode.CLEAR);
+		topCanvas.drawPath(mPath, cPaint);
+		if (topBitmap.getPixel(x, y) == 0xFF000000) {
+			return true;
+		}
+
+		return false;
+
 	}
 }
