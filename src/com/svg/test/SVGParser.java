@@ -1516,17 +1516,22 @@ public class SVGParser {
 				Float height = getFloatAttr("height", atts);
 				Float rx = getFloatAttr("rx", atts, 0f);
 				Float ry = getFloatAttr("ry", atts, 0f);
-				String name = getStringAttr("id", atts);
+
 				pushTransform(atts);
 				Properties props = new Properties(atts);
 				
-				java.util.Properties p = new java.util.Properties();
-				p.put(MyImageView.PROP_KEY_X, x);
-				p.put(MyImageView.PROP_KEY_Y, y);
-				p.put(MyImageView.PROP_KEY_WIDTH, width);
-				p.put(MyImageView.PROP_KEY_HEIGHT, height);
-				p.put(MyImageView.PROP_KEY_TYPE, "rect");
-				objectsMap.put(name, p);
+				//modification for sg malls start
+				String shop_id = getStringAttr("id", atts);
+				if(shop_id != null){
+					java.util.Properties p = new java.util.Properties();
+					p.put(SVGImageView.PROP_KEY_X, x);
+					p.put(SVGImageView.PROP_KEY_Y, y);
+					p.put(SVGImageView.PROP_KEY_WIDTH, width);
+					p.put(SVGImageView.PROP_KEY_HEIGHT, height);
+					p.put(SVGImageView.PROP_KEY_TYPE, "rect");
+					objectsMap.put(shop_id, p);
+				}
+				//modification for sg malls end
 				
 				if (doFill(props, gradientMap)) {
 					doLimits(x, y, width, height);
@@ -1563,6 +1568,19 @@ public class SVGParser {
 				Float centerX = getFloatAttr("cx", atts);
 				Float centerY = getFloatAttr("cy", atts);
 				Float radius = getFloatAttr("r", atts);
+				
+				//modification point for SG malls start
+				String shop_id = getStringAttr("id", atts);
+				if(shop_id != null){
+					java.util.Properties p = new java.util.Properties();
+					p.put(SVGImageView.PROP_KEY_CX, centerX);
+					p.put(SVGImageView.PROP_KEY_CY, centerY);
+					p.put(SVGImageView.PROP_KEY_R, radius);
+					p.put(SVGImageView.PROP_KEY_TYPE, SVGImageView.VAL_TYPE_CIRCLE);
+					objectsMap.put(shop_id, p);
+				}
+				//modification point for SG malls end
+				
 				if (centerX != null && centerY != null && radius != null) {
 					pushTransform(atts);
 					Properties props = new Properties(atts);
@@ -1581,6 +1599,19 @@ public class SVGParser {
 				Float centerY = getFloatAttr("cy", atts);
 				Float radiusX = getFloatAttr("rx", atts);
 				Float radiusY = getFloatAttr("ry", atts);
+				//modification point for SG malls start
+				String shop_id = getStringAttr("id", atts);
+				if(shop_id != null){
+					java.util.Properties p = new java.util.Properties();
+					p.put(SVGImageView.PROP_KEY_CX, centerX);
+					p.put(SVGImageView.PROP_KEY_CY, centerY);
+					p.put(SVGImageView.PROP_KEY_RX, radiusX);
+					p.put(SVGImageView.PROP_KEY_RY, radiusY);
+					p.put(SVGImageView.PROP_KEY_TYPE, SVGImageView.VAL_TYPE_ELLIPSE);
+					objectsMap.put(shop_id, p);
+				}
+				//modification point for SG malls end
+				
 				if (centerX != null && centerY != null && radiusX != null && radiusY != null) {
 					pushTransform(atts);
 					Properties props = new Properties(atts);
@@ -1597,6 +1628,10 @@ public class SVGParser {
 				}
 			} else if (!hidden && (localName.equals("polygon") || localName.equals("polyline"))) {
 				NumberParse numbers = getNumberParseAttr("points", atts);
+				//modification point for SG malls start
+				String shop_id = getStringAttr("id", atts);
+
+				//modification point for SG malls end
 				if (numbers != null) {
 					Path p = new Path();
 					ArrayList<Float> points = numbers.numbers;
@@ -1623,6 +1658,13 @@ public class SVGParser {
 							// showBounds("stroke", p);
 							canvas.drawPath(p, strokePaint);
 						}
+						
+						if(shop_id != null){
+							java.util.Properties prop = new java.util.Properties();
+							prop.put(SVGImageView.PROP_KEY_PATH_OBJ, p);
+							prop.put(SVGImageView.PROP_KEY_TYPE, SVGImageView.VAL_TYPE_PATH);
+							objectsMap.put(shop_id, prop);
+						}
 						popTransform();
 					}
 				}
@@ -1642,12 +1684,13 @@ public class SVGParser {
 					canvas.drawPath(p, strokePaint);
 				}
 				//*******
-				String name = getStringAttr("id", atts);
-				java.util.Properties prop = new java.util.Properties();
-			    prop.put(MyImageView.PROP_KEY_PATH_OBJ, p);
-				prop.put(MyImageView.PROP_KEY_TYPE, "path");
-				objectsMap.put(name, prop);
-				Log.d("SVG Parser", "name="+name);
+				String shop_id = getStringAttr("id", atts);
+				if(shop_id !=null){
+					java.util.Properties prop = new java.util.Properties();
+				    prop.put(SVGImageView.PROP_KEY_PATH_OBJ, p);
+					prop.put(SVGImageView.PROP_KEY_TYPE, "path");
+					objectsMap.put(shop_id, prop);
+				}
 				popTransform();
 			} else if (!hidden && localName.equals("text")) {
 				pushTransform(atts);
