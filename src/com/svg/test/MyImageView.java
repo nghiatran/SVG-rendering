@@ -95,7 +95,7 @@ public class MyImageView extends ImageView implements OnTouchListener{
 	protected void init(Context context){
 
 		savedMatrix = new Matrix();
-        this.setBackgroundColor(Color.WHITE);
+        this.setBackgroundColor(Color.BLUE);
         setOnTouchListener(this);
         
 		highlightColor = new Paint();
@@ -104,7 +104,7 @@ public class MyImageView extends ImageView implements OnTouchListener{
 		highlightColor.setStrokeWidth(2.0f);
 		highlightColor.setStyle(Paint.Style.FILL);
 		
-	    SVG svg = SVGParser.getSVGFromResource(getResources(), R.raw.drawing2);
+	    SVG svg = SVGParser.getSVGFromResource(getResources(), R.raw.map1_cropped_center_shopnames);
 	    picture = svg.getPicture();
 	    objects = SVGParser.getObjectsMap();
 	    for(Entry<String, Properties> entry : objects.entrySet()){
@@ -113,7 +113,7 @@ public class MyImageView extends ImageView implements OnTouchListener{
 	    }
 	    pictureWidth = picture.getWidth();
 	    pictureHeight = picture.getHeight();
-	    //getAllPAthPoints();
+
 	}
 
 
@@ -133,7 +133,16 @@ public class MyImageView extends ImageView implements OnTouchListener{
 	    	canvas.drawPath(p, highlightColor);
 	    	
 	    }
+	    drawMarker(canvas);
 	    	
+	}
+	
+	private void drawMarker(Canvas canvas){
+		float[] mValues = new float[9];
+		matrix.getValues(mValues);
+		Paint p1 =new Paint();
+		p1.setColor(Color.RED);
+		canvas.drawCircle(213.29f, (float) (pictureHeight -874.78), 10/mValues[Matrix.MSCALE_X], p1);
 	}
 	
 	private void initializeMatrix(Canvas canvas){
@@ -163,6 +172,8 @@ public class MyImageView extends ImageView implements OnTouchListener{
 		viewerWidth = measureWidth(widthMeasureSpec);
 		viewerHeight = measureHeight(heightMeasureSpec);
 		setMeasuredDimension(viewerWidth, viewerHeight);
+		Log.d(TAG,"Padding top: "+getPaddingTop());
+		Log.d(TAG,"Padding left: "+getPaddingLeft());
 	}
 
 	/**
@@ -239,6 +250,7 @@ public class MyImageView extends ImageView implements OnTouchListener{
 			 break;
 		 case MotionEvent.ACTION_UP:
 			 if(event.getX() == startX && event.getY()==startY){
+				 Log.d(TAG,"action up");
 				 if(isWithinBounds(event)){
 					 invalidate();
 				 }
@@ -304,6 +316,7 @@ public class MyImageView extends ImageView implements OnTouchListener{
 		if(ratioWidth < ratioHeight){
 			scale = (float) ratioWidth;
 			minSupportedZoom = (float) ratioWidth;
+			Log.d(TAG,"ratio width");
 		}
 		else {
 			scale = (float) ratioHeight;
@@ -528,8 +541,11 @@ public class MyImageView extends ImageView implements OnTouchListener{
 		Canvas topCanvas = new Canvas(topBitmap);
 		topCanvas.drawColor(0xFFFFFFFF, Mode.CLEAR);
 		topCanvas.drawPath(mPath, cPaint);
+		try{
 		if (topBitmap.getPixel(x, y) == 0xFF000000) {
 			return true;
+		}
+		}catch (Exception e) {
 		}
 
 		return false;
