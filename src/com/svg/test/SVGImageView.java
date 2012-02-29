@@ -14,6 +14,7 @@ import android.graphics.Path;
 import android.graphics.Picture;
 import android.graphics.PointF;
 import android.graphics.PorterDuff.Mode;
+import android.graphics.RectF;
 import android.util.AttributeSet;
 import android.util.FloatMath;
 import android.util.Log;
@@ -24,7 +25,7 @@ import android.widget.ImageView;
 import android.widget.Toast;
 
 
-public class MyImageView extends ImageView implements OnTouchListener{
+public class SVGImageView extends ImageView implements OnTouchListener{
 	
 	private static final float MIN_ZOOM_SCALE = 0.5f;
 	private static final float MAX_ZOOM_SCALE = 10.0f; // 10x of whatever user has initially on screen
@@ -51,10 +52,6 @@ public class MyImageView extends ImageView implements OnTouchListener{
 	private Picture picture;
 	private HashMap<String, Properties> objects; //this will contain all the object/shops (with its coordinates) parsed from the svg file
 	private Paint highlightColor;
-	private float objX;
-	private float objY;
-	private float objWidth;
-	private float objHeight;
 	String highlightType;
 	Properties highlightObjProperties;
 
@@ -68,12 +65,27 @@ public class MyImageView extends ImageView implements OnTouchListener{
     float minSupportedZoom, maxSupportedZoom;
     
     public static final int KEY_TRANS_X = 0, KEY_TRANS_Y = 1;
-    public static final String TYPE_PATH="path";
-    public static final String TYPE_RECT="rect";
-    public static final String KEY_TYPE="type";
-    public static final String KEY_X="x";
+    public static final String VAL_TYPE_PATH="path";
+    public static final String VAL_TYPE_RECT="rect";
+    public static final String VAL_TYPE_CIRCLE="circle";
+    public static final String VAL_TYPE_ELLIPSE="ellipse";
+    public static final String PROP_KEY_TYPE="type";
+    public static final String PROP_KEY_X="x";
+    public static final String PROP_KEY_Y="y";
+    public static final String PROP_KEY_PATH_OBJ="path_obj";
+	public static final String PROP_KEY_WIDTH = "width";
+	public static final String PROP_KEY_HEIGHT = "height";
+	public static final String PROP_KEY_CX = "cx";
+	public static final String PROP_KEY_CY = "cy";
+	public static final String PROP_KEY_R = "r";
+	public static final String PROP_KEY_RX = "rx";
+	public static final String PROP_KEY_RY = "ry";
 	
-	public MyImageView(Context context) {
+    private HashMap<Integer,String > id_color_map;
+	Canvas topCanvas;
+	Bitmap topBitmap;
+    
+	public SVGImageView(Context context) {
 		super(context);
         init(context);
 
@@ -81,12 +93,12 @@ public class MyImageView extends ImageView implements OnTouchListener{
 		
 	}
 
-	public MyImageView(Context context, AttributeSet attrs, int defStyle) {
+	public SVGImageView(Context context, AttributeSet attrs, int defStyle) {
 		super(context, attrs, defStyle);
 		init(context);
 	}
 
-	public MyImageView(Context context, AttributeSet attrs) {
+	public SVGImageView(Context context, AttributeSet attrs) {
 		super(context, attrs);
 		init(context);
 	}
@@ -107,12 +119,12 @@ public class MyImageView extends ImageView implements OnTouchListener{
 	    SVG svg = SVGParser.getSVGFromResource(getResources(), R.raw.map1_cropped_center_shopnames);
 	    picture = svg.getPicture();
 	    objects = SVGParser.getObjectsMap();
-	    for(Entry<String, Properties> entry : objects.entrySet()){
-	    	Log.d("", "id="+entry.getKey());
-	    	Log.d("", "value="+entry.getValue());
-	    }
+
 	    pictureWidth = picture.getWidth();
 	    pictureHeight = picture.getHeight();
+
+	    //getAllPAthPoints();
+	    createTopMapCanvas();
 
 	}
 
@@ -126,12 +138,31 @@ public class MyImageView extends ImageView implements OnTouchListener{
 		super.onDraw(canvas);
 	    canvas.setMatrix(matrix);
 	    canvas.drawPicture(picture);
-	    if(highlightType!=null && highlightType.equals("rect"))
-	       canvas.drawRect(objX, objY, objX + objWidth, objY + objHeight, highlightColor);
-	    else if(highlightType!=null && highlightType.equals("path")){
-	    	Path p = (Path) highlightObjProperties.get("path");
+	    if(highlightType!=null && highlightType.equals(VAL_TYPE_RECT)){
+	    	Log.d("", "draw rect");
+			float x = (Float)highlightObjProperties.get(PROP_KEY_X);
+			float y = (Float)highlightObjProperties.get(PROP_KEY_Y);
+			float width = (Float)highlightObjProperties.get(PROP_KEY_WIDTH);
+			float height = (Float)highlightObjProperties.get(PROP_KEY_HEIGHT);
+			canvas.drawRect(x, y, x + width, y + height, highlightColor);
+			
+	    }else if(highlightType!=null && highlightType.equals(VAL_TYPE_PATH)){
+	    	Path p = (Path) highlightObjProperties.get(PROP_KEY_PATH_OBJ);
 	    	canvas.drawPath(p, highlightColor);
-	    	
+
+	    }else if(highlightType!=null && highlightType.equals(VAL_TYPE_CIRCLE)){
+        	float centerX = (Float)highlightObjProperties.get(PROP_KEY_CX);
+        	float centerY = (Float)highlightObjProperties.get(PROP_KEY_CY);
+        	float radius = (Float)highlightObjProperties.get(PROP_KEY_R);
+        	canvas.drawCircle(centerX, centerY, radius, highlightColor);
+	    }else if(highlightType!=null && highlightType.equals(VAL_TYPE_ELLIPSE)){
+        	float centerX = (Float)highlightObjProperties.get(PROP_KEY_CX);
+        	float centerY = (Float)highlightObjProperties.get(PROP_KEY_CY);
+        	float radiusX = (Float)highlightObjProperties.get(PROP_KEY_RX);
+        	float radiusY = (Float)highlightObjProperties.get(PROP_KEY_RY);
+        	RectF rect = new RectF();
+        	rect.set(centerX - radiusX, centerY - radiusY, centerX + radiusX, centerY + radiusY);
+        	canvas.drawOval(rect, highlightColor);
 	    }
 	    drawMarker(canvas);
 	    	
@@ -486,69 +517,82 @@ public class MyImageView extends ImageView implements OnTouchListener{
 	}
 	
 	private boolean isWithinBounds(MotionEvent e){
-		boolean ret = false;
 		float[] mValues = new float[9];
 		matrix.getValues(mValues);
 		float totalScale = mValues[Matrix.MSCALE_X];
+		float x = (e.getRawX()-mValues[Matrix.MTRANS_X])/totalScale;
+		float y = (e.getRawY()-mValues[Matrix.MTRANS_Y])/totalScale;
 		
 		Log.d("","objects="+objects);
+		Log.d("","id_color_map="+id_color_map);
+		
+		try{
+	        int color_clicked = topBitmap.getPixel((int)x ,(int) y);
+			String shop = id_color_map.get(color_clicked);
+			if(shop!=null){
+				highlightObjProperties = objects.get(shop);
+				highlightType = (String) highlightObjProperties.get(PROP_KEY_TYPE);
+				return true;
+	        }
+		} catch (Exception exception){     //pixel (x,y) is out of bound of the bitmap
+		}
+		return false;
+	}
+
+	private void createTopMapCanvas(){
+		
+		topBitmap = Bitmap.createBitmap(pictureWidth, pictureHeight, Bitmap.Config.ARGB_8888);
+		id_color_map = new HashMap<Integer,String>();
+		
+	    int color = 0xFF000000;
+		Paint cPaint = new Paint();
+		cPaint.setAntiAlias(false);
+		cPaint.setStyle(Paint.Style.FILL);
+		topCanvas = new Canvas(topBitmap);
+		topCanvas.drawColor(0xFFFFFFFF, Mode.CLEAR);
+
 		for(Entry<String, Properties> object : objects.entrySet()){
 			Properties prop = object.getValue();
-            String type =(String)prop.get("type");
-			float x = (e.getRawX()-mValues[Matrix.MTRANS_X])/totalScale;
-			float y = (e.getRawY()-mValues[Matrix.MTRANS_Y])/totalScale;
-
-			if(type.equals("rect")){
-				Log.d("","RECT!");
-				objX = (Float)prop.get("x");
-				objY = (Float)prop.get("y");
-				objWidth = (Float)prop.get("width");
-				objHeight = (Float)prop.get("height");
-		        if ((x > objX) && (x < (objX + objWidth))) {
-		            if ((y > objY) && (y < (objY + objHeight))) {
-		            	Toast.makeText(getContext(), object.getKey().toString(), Toast.LENGTH_SHORT).show();;
-		            	highlightObjProperties = prop;
-		            	highlightType = type;
-		            	Log.d("","INSIDE RECT");
-		                return true;
-		            }
-		        }
-			}else if(type.equals("path")){
-				Log.d("","PATH!");
-				Path path = (Path) prop.get("path");
-		        if(isContained(path, (int)x, (int)y)){
-	            	Toast.makeText(getContext(), object.getKey().toString(), Toast.LENGTH_SHORT).show();;
-	            	highlightObjProperties = prop;
-	            	highlightType = type;
-	            	Log.d("","INSIDE PATH");
-	            	return true;
-		        }
-			}else{
-				highlightType = "";
-			}
-
+            String type =(String)prop.get(PROP_KEY_TYPE);
+            
+            if(type.equals(VAL_TYPE_PATH)){
+            	Path path = (Path) prop.get(PROP_KEY_PATH_OBJ);
+        		cPaint.setColor(color);
+        		topCanvas.drawPath(path, cPaint);
+        		id_color_map.put(color, object.getKey());
+        		color++;
+            }else if(type.equals(VAL_TYPE_RECT)){
+				float x = (Float)prop.get(PROP_KEY_X);
+				float y = (Float)prop.get(PROP_KEY_Y);
+				float width = (Float)prop.get(PROP_KEY_WIDTH);
+				float height = (Float)prop.get(PROP_KEY_HEIGHT);
+				cPaint.setColor(color);
+				topCanvas.drawRect(x, y, x + width, y + height, cPaint);
+				id_color_map.put(color,object.getKey());
+				color++;
+            }else if(type.equals(VAL_TYPE_CIRCLE)) {
+            	Log.d("","DRAW CIRCLE");
+            	cPaint.setColor(color);
+            	float centerX = (Float)prop.get(PROP_KEY_CX);
+            	float centerY = (Float)prop.get(PROP_KEY_CY);
+            	float radius = (Float)prop.get(PROP_KEY_R);
+            	topCanvas.drawCircle(centerX, centerY, radius, cPaint);
+				id_color_map.put(color,object.getKey());
+				color++;
+            }else if(type.equals(VAL_TYPE_ELLIPSE)) {
+            	Log.d("","DRAW ELLIPSE");
+            	cPaint.setColor(color);
+            	float centerX = (Float)prop.get(PROP_KEY_CX);
+            	float centerY = (Float)prop.get(PROP_KEY_CY);
+            	float radiusX = (Float)prop.get(PROP_KEY_RX);
+            	float radiusY = (Float)prop.get(PROP_KEY_RX);
+            	RectF rect = new RectF();
+            	rect.set(centerX - radiusX, centerY - radiusY, centerX + radiusX, centerY + radiusY);
+            	topCanvas.drawOval(rect, cPaint);
+				id_color_map.put(color,object.getKey());
+				color++;
+            }
 		}
-		return ret;
 	}
-
-	private boolean isContained(Path mPath, int x, int y){
-		Paint cPaint = new Paint();
-
-		cPaint.setAntiAlias(false);
-		cPaint.setColor(0xFF000000);
-		cPaint.setStyle(Paint.Style.FILL);
-		Bitmap topBitmap = Bitmap.createBitmap(pictureWidth, pictureHeight, Bitmap.Config.ARGB_8888);
-		Canvas topCanvas = new Canvas(topBitmap);
-		topCanvas.drawColor(0xFFFFFFFF, Mode.CLEAR);
-		topCanvas.drawPath(mPath, cPaint);
-		try{
-		if (topBitmap.getPixel(x, y) == 0xFF000000) {
-			return true;
-		}
-		}catch (Exception e) {
-		}
-
-		return false;
-
-	}
+	
 }
